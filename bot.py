@@ -95,9 +95,9 @@ async def assign_roles(interaction: discord.Interaction):
                 last_active = None
 
             # ロール判定
-            if last_active is None and (last_role_name is None or last_role_name is role_never):
+            if last_active is None and (last_role_name is None or last_role_name == role_never.name):
                 role_to_add = role_never
-            elif last_active is None and last_role_name is role_busy:
+            elif last_active is None and last_role_name == role_busy:
                 role_to_add = role_busy
             else:
                 role_to_add = role_active if last_active > one_month_ago else role_busy
@@ -127,7 +127,7 @@ async def assign_roles(interaction: discord.Interaction):
             await interaction.followup.send("ロール更新はありませんでした ✅")
 
     except Exception as e:
-        await interaction.followup.send(f"処理の途中でエラーが発生しました ❌")
+        await interaction.followup.send(f"処理の途中でエラーが発生しました ❌\n{e}")
 
 # bot導入以前からVC参加済みのメンバーを手動で登録する
 @client.tree.command(name="set_initial_member", description="初期メンバーを手動で登録します")
@@ -141,7 +141,8 @@ async def set_initial_member(interaction: discord.Interaction, member: discord.M
         role_never = discord.utils.get(guild.roles, name="未参加")
 
         # メンバーに未参加ロールがついている場合のみ、多忙に変更
-        if role_never in member.roles:
+        member_roles = [r.name for r in member.roles]
+        if role_never in member.roles or not any(r.name in ["アクティブなメンバー", "多忙なメンバー", "未参加"] for r in member.roles):
             await member.remove_roles(role_never)
             await member.add_roles(role_busy)
 
