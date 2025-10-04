@@ -112,11 +112,9 @@ async def assign_roles(interaction: discord.Interaction):
             log_messages.append(f"{member.display_name}({member.name}): {last_role_name} → {role_to_add.name}")
 
             # last_voiceは更新せず、last_roleだけ更新
-            last_voice_activity[guild_id][user_id] = {
-                "last_voice": last_active_str,
-                "last_role": role_to_add.name
-            }
-
+            last_voice_activity.setdefault(guild_id, {})
+            last_voice_activity[guild_id].setdefault(user_id, {"last_voice": last_active_str, "last_role": None})
+            last_voice_activity[guild_id][user_id]["last_role"] = role_to_add.name
 
     await save_data_async()
     await send_log(interaction, log_messages)
@@ -141,10 +139,10 @@ async def set_initial_member(interaction: discord.Interaction, member: discord.M
         guild_id = str(guild.id)
         user_id = str(member.id)
         last_active_str = last_voice_activity.get(guild_id, {}).get(user_id, {}).get("last_voice")
-        last_voice_activity.setdefault(guild_id, {})[user_id] = {
-            "last_voice": last_active_str,
-            "last_role": role_busy.name
-        }
+        last_voice_activity.setdefault(guild_id, {})
+        last_voice_activity[guild_id].setdefault(user_id, {"last_voice": last_active_str, "last_role": None})
+        last_voice_activity[guild_id][user_id]["last_role"] = role_busy.name
+
         await save_data_async()
 
         await interaction.followup.send(f"{member.display_name} を初期メンバーとして登録しました ✅")
