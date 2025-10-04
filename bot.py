@@ -56,9 +56,11 @@ async def on_voice_state_update(member, before, after):
         await save_data_async()
 
 # VC参加履歴に基づいて自動でロール付与する
-@client.tree.command(name="assign_roles", description="VC参加履歴に基づいてロールを付与する（管理者用）")
+@client.tree.command(name="assign_roles", description="VC参加履歴に基づいてロールを付与する")
 @app_commands.checks.has_permissions(administrator=True)
 async def assign_roles(interaction: discord.Interaction):
+    await interaction.response.defer()
+
     guild = interaction.guild
     guild_id = str(guild.id)
     now = datetime.utcnow()
@@ -68,7 +70,7 @@ async def assign_roles(interaction: discord.Interaction):
     role_busy = discord.utils.get(guild.roles, name="多忙なメンバー")
     role_never = discord.utils.get(guild.roles, name="未参加")
 
-    await interaction.response.send_message(
+    await interaction.followup.send(
         f"VC参加ログをもとにロールを付与します！\n"
         f"１か月以内に参加した：{role_active.name if role_active else 'ロール未作成'}\n"
         f"１か月以内に参加していない：{role_busy.name if role_busy else 'ロール未作成'}\n"
@@ -123,7 +125,7 @@ async def assign_roles(interaction: discord.Interaction):
 # bot導入以前からVC参加済みのメンバーを手動で登録する
 @client.tree.command(name="set_initial_member", description="初期メンバーを手動で登録します")
 async def set_initial_member(interaction: discord.Interaction, member: discord.Member):
-    await interaction.response.send_message("「多忙なメンバー」ロールを付与中・・・")
+    await interaction.response.defer()
     guild = interaction.guild
 
     role_active = discord.utils.get(guild.roles, name="アクティブなメンバー")
@@ -154,10 +156,11 @@ async def set_initial_member(interaction: discord.Interaction, member: discord.M
 
 @client.tree.command(name="get_last_vc_time_all", description="全員の最終VC参加時間を表示します")
 async def get_last_vc_time_all(interaction: discord.Interaction):
+    await interaction.response.defer()
     guild = interaction.guild
     guild_id = str(guild.id)
 
-    await interaction.response.send_message("VC参加履歴を取得中...")
+    await interaction.followup.send("VC参加履歴を取得中...")
 
     guild_data = last_voice_activity.get(guild_id, {})
     if not guild_data:
@@ -194,10 +197,11 @@ async def get_last_vc_time_all(interaction: discord.Interaction):
 
 @client.tree.command(name="get_last_vc_time", description="指定したメンバーの最終VC参加時間を表示します")
 async def get_last_vc_time(interaction: discord.Interaction, member: discord.Member):
+    await interaction.response.defer()
     guild_id = str(interaction.guild.id)
     guild_data = last_voice_activity.get(guild_id, {})
 
-    await interaction.response.send_message(f"{member.display_name} のVC履歴を確認中...")
+    await interaction.followup.send(f"{member.display_name} のVC履歴を確認中...")
 
     user_id = str(member.id)
     user_data = guild_data.get(user_id)
