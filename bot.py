@@ -95,9 +95,9 @@ async def assign_roles(interaction: discord.Interaction):
                 last_active = None
 
             # ロール判定
-            if last_active is None and last_role_name is None:
+            if last_active is None and (last_role_name is None or last_role_name is role_never):
                 role_to_add = role_never
-            elif last_active is None and last_role_name is not None:
+            elif last_active is None and last_role_name is role_busy:
                 role_to_add = role_busy
             else:
                 role_to_add = role_active if last_active > one_month_ago else role_busy
