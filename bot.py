@@ -120,8 +120,12 @@ async def assign_roles(interaction: discord.Interaction):
                 last_voice_activity[guild_id][user_id]["last_role"] = role_to_add.name
 
         await save_data_async()
-        await send_log(interaction, log_messages)
-        await interaction.followup.send("ロール付与完了 ✅")
+        if log_messages:
+            await send_log(interaction, log_messages)
+            await interaction.followup.send("ロール付与完了 ✅")
+        else:
+            await interaction.followup.send("ロール更新はありませんでした ✅")
+
     except Exception as e:
         await interaction.followup.send(f"処理の途中でエラーが発生しました ❌")
 
