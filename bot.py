@@ -71,12 +71,13 @@ async def assign_roles(interaction: discord.Interaction):
         role_busy = discord.utils.get(guild.roles, name="多忙なメンバー")
         role_never = discord.utils.get(guild.roles, name="未参加")
 
-        await interaction.followup.send(
-            f"VC参加ログをもとにロールを付与します！\n"
-            f"１か月以内に参加した：{role_active.name if role_active else 'ロール未作成'}\n"
-            f"１か月以内に参加していない：{role_busy.name if role_busy else 'ロール未作成'}\n"
-            "実行中・・・"
-        )
+        # 重要: ロールが全部揃っているかチェックしておく
+        if not all([role_active, role_busy, role_never]):
+            missing = [name for name, obj in (("アクティブなメンバー", role_active),("多忙なメンバー", role_busy),("未参加", role_never)) if obj is None]
+            await interaction.followup.send(f"以下のロールが存在しません: {', '.join(missing)} ❌")
+            return
+
+        await interaction.followup.send("VC参加ログをもとにロールを付与します！\n実行中・・・")
 
         log_messages = []
 
@@ -89,20 +90,27 @@ async def assign_roles(interaction: discord.Interaction):
             last_active_str = user_data.get("last_voice")
             last_role_name = user_data.get("last_role")
 
-            if last_active_str:
-                last_active = datetime.fromisoformat(last_active_str)
+            # last_active を安全にパース（失敗したら None 扱い）
+            if last_active_str and last_active_str != "None":
+                try:
+                    last_active = datetime.fromisoformat(last_active_str)
+                except Exception:
+                    last_active = None
             else:
                 last_active = None
 
-            # ロール判定
-            if last_active is None and (last_role_name is None or last_role_name == role_never.name):
-                role_to_add = role_never
-            elif last_active is None and last_role_name == role_busy:
-                role_to_add = role_busy
+            if last_active is None:
+                if last_role_name is None or last_role_name == role_never.name:
+                    role_to_add = role_never
+                else:
+                    role_to_add = role_busy
             else:
-                role_to_add = role_active if last_active > one_month_ago else role_busy
+                if last_active is not None and isinstance(last_active, datetime) and last_active > one_month_ago:
+                    role_to_add = role_active
+                else:
+                    role_to_add = role_busy
 
-            # 前回と同じロールならスキップ
+            # 前回と同じロールだったらスキップ
             if role_to_add and last_role_name == role_to_add.name:
                 continue
 
