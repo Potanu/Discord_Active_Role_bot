@@ -65,6 +65,33 @@ async def manual_backup(interaction: discord.Interaction):
 
     print(f"🟡 手動バックアップを送信しました: {filename}")
 
+@client.tree.command(name="restore_backup", description="バックアップからvoice_data.jsonを復元")
+@app_commands.checks.has_permissions(administrator=True)
+async def restore_backup(interaction: discord.Interaction, file: discord.Attachment):
+    await interaction.response.defer()
+
+    if not file.filename.endswith(".json"):
+        await interaction.followup.send("⚠️ JSONファイルを指定してください。")
+        return
+
+    # ファイルを読み込む
+    data_bytes = await file.read()
+    try:
+        data = json.loads(data_bytes)
+    except Exception as e:
+        await interaction.followup.send(f"⚠️ JSONの読み込みに失敗しました: {e}")
+        return
+
+    # Render上のvoice_data.jsonに安全に書き込み
+    global last_voice_activity
+    last_voice_activity = data
+    async with save_lock:
+        with open(DATA_FILE, "w") as f:
+            json.dump(last_voice_activity, f, indent=2, ensure_ascii=False)
+
+    await interaction.followup.send(f"✅ voice_data.json を復元しました（{file.filename}）")
+
+
 # VC記録を管理
 DATA_FILE = "voice_data.json"
 if os.path.exists(DATA_FILE):
