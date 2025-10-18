@@ -136,7 +136,7 @@ async def assign_roles(interaction: discord.Interaction):
         guild = interaction.guild
         guild_id = str(guild.id)
         now = datetime.utcnow()
-        one_month_ago = now - timedelta(days=30)
+        one_month_ago = now - timedelta(days=90)
 
         role_active = discord.utils.get(guild.roles, name="アクティブなメンバー")
         role_busy = discord.utils.get(guild.roles, name="多忙なメンバー")
