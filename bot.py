@@ -1,11 +1,13 @@
 import discord
 from discord import app_commands
-from datetime import datetime, timedelta
+from discord.ext import tasks
+from datetime import datetime, timedelta, time
 import json, os, threading
 import asyncio
 from flask import Flask
 
 TOKEN = os.getenv("DISCORD_TOKEN")
+CHANNEL_ID = 1421779868940763136
 
 intents = discord.Intents.default()
 intents.members = True
@@ -23,6 +25,27 @@ class MyClient(discord.Client):
 
 client = MyClient()
 
+# === 定期タスク ===
+@tasks.loop(time=time(hour=15, minute=0))  # 毎日JST0時に送信
+async def send_json_file():
+    if not os.path.exists(DATA_FILE):
+        print("ファイルが存在しません。送信スキップ。")
+        return
+
+    channel = client.get_channel(CHANNEL_ID)
+    if channel is None:
+        print("チャンネルが見つかりません。")
+        return
+
+    # 日付付きファイル名にして送信
+    filename = f"voice_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    with open(DATA_FILE, "rb") as f:
+        await channel.send(
+            content=f"📊 VC記録のバックアップ（{datetime.now().strftime('%Y/%m/%d %H:%M')}）",
+            file=discord.File(f, filename)
+        )
+
+    print(f"✅ JSONファイルを送信しました: {filename}")
 
 # VC記録を管理
 DATA_FILE = "voice_data.json"
@@ -38,9 +61,11 @@ async def save_data_async():
         with open(DATA_FILE, "w") as f:
             json.dump(last_voice_activity, f, indent=2, ensure_ascii=False)
 
+# === Bot起動時 ===
 @client.event
 async def on_ready():
     print(f"ログイン成功: {client.user}")
+    send_json_file.start()  # 定期タスク開始
 
 @client.event
 async def on_voice_state_update(member, before, after):
