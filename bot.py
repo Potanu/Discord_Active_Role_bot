@@ -137,41 +137,6 @@ async def assign_roles(interaction: discord.Interaction):
     except Exception as e:
         await interaction.followup.send(f"処理の途中でエラーが発生しました ❌\n{e}")
 
-# bot導入以前からVC参加済みのメンバーを手動で登録する
-@client.tree.command(name="set_initial_member", description="初期メンバーを手動で登録します")
-async def set_initial_member(interaction: discord.Interaction, member: discord.Member):
-    try:
-        await interaction.response.defer()
-        guild = interaction.guild
-
-        role_active = discord.utils.get(guild.roles, name="アクティブなメンバー")
-        role_busy = discord.utils.get(guild.roles, name="多忙なメンバー")
-        role_never = discord.utils.get(guild.roles, name="未参加")
-
-        # メンバーに未参加ロールがついている場合のみ、多忙に変更
-        member_roles = [r.name for r in member.roles]
-        if role_never in member.roles or not any(r.name in ["アクティブなメンバー", "多忙なメンバー", "未参加"] for r in member.roles):
-            await member.remove_roles(role_never)
-            await member.add_roles(role_busy)
-
-            # last_roleも更新して保存
-            guild_id = str(guild.id)
-            user_id = str(member.id)
-            last_active_str = last_voice_activity.get(guild_id, {}).get(user_id, {}).get("last_voice")
-            last_voice_activity.setdefault(guild_id, {})
-            last_voice_activity[guild_id].setdefault(user_id, {"last_voice": last_active_str, "last_role": None})
-            last_voice_activity[guild_id][user_id]["last_role"] = role_busy.name
-
-            await save_data_async()
-
-            await interaction.followup.send(f"{member.display_name} を初期メンバーとして登録しました ✅")
-        else:
-            await interaction.followup.send(
-                f"{member.display_name} は既に登録済みのため変更できません ❌"
-            )
-    except Exception as e:
-        await interaction.followup.send(f"処理の途中でエラーが発生しました ❌")
-
 @client.tree.command(name="get_last_vc_time_all", description="全員の最終VC参加時間を表示します")
 async def get_last_vc_time_all(interaction: discord.Interaction):
     try:
