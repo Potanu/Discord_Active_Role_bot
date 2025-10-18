@@ -47,6 +47,24 @@ async def send_json_file():
 
     print(f"✅ JSONファイルを送信しました: {filename}")
 
+# 🟢 手動でバックアップを送信する
+@client.tree.command(name="backup", description="手動でvoice_data.jsonをDiscordに送信します。")
+@app_commands.checks.has_permissions(administrator=True)
+async def manual_backup(interaction: discord.Interaction):
+    if not os.path.exists(DATA_FILE):
+        await interaction.response.send_message("⚠️ voice_data.json が存在しません。", ephemeral=True)
+        return
+
+    jst_now = datetime.utcnow() + timedelta(hours=9)
+    filename = f"voice_data_{jst_now.strftime('%Y%m%d_%H%M%S')}.json"
+    with open(DATA_FILE, "rb") as f:
+        await interaction.response.send_message(
+            content=f"📁 手動バックアップ（{jst_now.strftime('%Y/%m/%d %H:%M')}）",
+            file=discord.File(f, filename)
+        )
+
+    print(f"🟡 手動バックアップを送信しました: {filename}")
+
 # VC記録を管理
 DATA_FILE = "voice_data.json"
 if os.path.exists(DATA_FILE):
@@ -65,7 +83,8 @@ async def save_data_async():
 @client.event
 async def on_ready():
     print(f"ログイン成功: {client.user}")
-    send_json_file.start()  # 定期タスク開始
+    if not send_json_file.is_running():
+        send_json_file.start()  # 定期タスク開始
 
 @client.event
 async def on_voice_state_update(member, before, after):
